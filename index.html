@@ -39,7 +39,9 @@
       // externally_connectable), which then talks to Firestore itself.
       import { initializeApp } from 'https://www.gstatic.com/firebasejs/13.0.0/firebase-app.js';
       import {
-        getAuth,
+        initializeAuth,
+        inMemoryPersistence,
+        browserPopupRedirectResolver,
         GoogleAuthProvider,
         signInWithPopup,
         signOut,
@@ -51,7 +53,9 @@
         projectId: 'dual-subs-2b0407',
         appId: '1:729739067887:web:134e9a9668a73c6b69f61a',
       });
-      const auth = getAuth(app);
+      // Kept in memory only: this page signs out straight away, and Firebase's default IndexedDB
+      // database is shared by all of Alex's sites, where another page can block opening it.
+      const auth = initializeAuth(app, { persistence: inMemoryPersistence, popupRedirectResolver: browserPopupRedirectResolver });
       const ext = new URLSearchParams(location.search).get('ext');
       const status = document.getElementById('status');
       const button = document.getElementById('signin');
