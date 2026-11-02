@@ -1,0 +1,86 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Netflix Dual Subs: sign in</title>
+    <style>
+      body {
+        max-width: 420px;
+        margin: 15vh auto;
+        padding: 0 20px;
+        font: 16px/1.5 system-ui, -apple-system, sans-serif;
+        color: #eee;
+        background: #181818;
+        color-scheme: dark;
+      }
+      h1 { font-size: 20px; color: #e50914; }
+      button {
+        padding: 8px 16px;
+        font: inherit;
+        color: #eee;
+        background: #2a2a2a;
+        border: 1px solid #555;
+        border-radius: 6px;
+        cursor: pointer;
+      }
+      #status { color: #bbb; }
+      [hidden] { display: none; }
+    </style>
+  </head>
+  <body>
+    <h1>Netflix Dual Subs</h1>
+    <p>Sign in so your known, unknown and learning words sync between computers.</p>
+    <button id="signin">Sign in with Google</button>
+    <p id="status"></p>
+    <script type="module">
+      // The extension opens this page with ?ext=<extension id>. After Google sign-in
+      // the Firebase refresh token is handed to the extension (allowed by its
+      // externally_connectable), which then talks to Firestore itself.
+      import { initializeApp } from 'https://www.gstatic.com/firebasejs/13.0.0/firebase-app.js';
+      import {
+        getAuth,
+        GoogleAuthProvider,
+        signInWithPopup,
+        signOut,
+      } from 'https://www.gstatic.com/firebasejs/13.0.0/firebase-auth.js';
+
+      const app = initializeApp({
+        apiKey: 'AIzaSyAwUezOndGsztkWGH00Z-PqNRUnyZHouHU',
+        authDomain: 'dual-subs-2b0407.firebaseapp.com',
+        projectId: 'dual-subs-2b0407',
+        appId: '1:729739067887:web:134e9a9668a73c6b69f61a',
+      });
+      const auth = getAuth(app);
+      const ext = new URLSearchParams(location.search).get('ext');
+      const status = document.getElementById('status');
+      const button = document.getElementById('signin');
+
+      if (!ext || !globalThis.chrome?.runtime?.sendMessage) {
+        status.textContent = 'Open this page from the extension’s popup (Sign in with Google).';
+        button.hidden = true;
+      }
+
+      button.addEventListener('click', async () => {
+        status.textContent = 'Signing in…';
+        try {
+          const { user } = await signInWithPopup(auth, new GoogleAuthProvider());
+          const res = await chrome.runtime.sendMessage(ext, {
+            type: 'signIn',
+            refreshToken: user.refreshToken,
+            uid: user.uid,
+            email: user.email,
+          });
+          // The extension keeps its own copy; this page doesn't need to stay signed in.
+          await signOut(auth);
+          if (!res || res.error) throw new Error(res ? res.error : 'the extension did not answer');
+          button.hidden = true;
+          status.textContent = `Signed in as ${user.email}. You can close this tab.`;
+          setTimeout(() => window.close(), 1500);
+        } catch (e) {
+          status.textContent = `Couldn’t sign in: ${e.message || e}`;
+        }
+      });
+    </script>
+  </body>
+</html>
