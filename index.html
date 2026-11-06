@@ -68,7 +68,11 @@
       button.addEventListener('click', async () => {
         status.textContent = 'Signing in…';
         try {
-          const { user } = await signInWithPopup(auth, new GoogleAuthProvider());
+          // Always ask which Google account (Alex, 2026-11-09: it signed straight back in to
+          // the last one, so another account couldn't be chosen).
+          const provider = new GoogleAuthProvider();
+          provider.setCustomParameters({ prompt: 'select_account' });
+          const { user } = await signInWithPopup(auth, provider);
           const res = await chrome.runtime.sendMessage(ext, {
             type: 'signIn',
             refreshToken: user.refreshToken,
